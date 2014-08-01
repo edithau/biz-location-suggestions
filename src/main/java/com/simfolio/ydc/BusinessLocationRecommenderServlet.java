@@ -6,11 +6,13 @@ import java.io.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
 
 // Extend HttpServlet class
 @SuppressWarnings("serial")
 public class BusinessLocationRecommenderServlet extends HttpServlet {
+	private static Logger logger = Logger.getLogger(BusinessLocationRecommenderServlet.class.getName());
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -29,7 +31,7 @@ public class BusinessLocationRecommenderServlet extends HttpServlet {
 		try {
 			results = (new BusinessLocationRecommender(businessId, dist)).recommend(shouldAddLinks);
 		} catch (SolrServerException e) {
-			e.printStackTrace();
+			logger.error("Solr Server is not running");
 		}
 		response.getWriter().println("{\"results\":" + results + "}");
 	}

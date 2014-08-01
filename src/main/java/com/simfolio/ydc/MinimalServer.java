@@ -12,7 +12,8 @@ public class MinimalServer {
     public static void main(String[] args) throws Exception {
         Server server = new Server(8080);
         ServletHandler handler = new ServletHandler();
-        handler.addServletWithMapping(BusinessLocationRecommenderServlet.class, "/recommend");
+        handler.addServletWithMapping(com.simfolio.ydc.BusinessLocationRecommenderServlet.class, "/recommend");
+        handler.addServletWithMapping(GetSolrServlet.class, "/getSolr");
         server.setHandler(handler);    
         server.start();
         server.join();
