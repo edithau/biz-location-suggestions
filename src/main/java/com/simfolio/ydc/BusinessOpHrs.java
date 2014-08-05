@@ -6,6 +6,10 @@ import java.util.Map;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonObject.Member;
 
+
+/*
+ * data structure represent a business operating time segment.
+ */
 public class BusinessOpHrs {
 	static String MORNING_OPEN_BEFORE = "10:01";
 	static String MORNING_CLOSE_AFTER = "10:59";

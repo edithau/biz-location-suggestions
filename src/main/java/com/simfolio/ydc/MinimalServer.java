@@ -5,6 +5,10 @@ import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 
+
+/*
+ * My favourite web server for small projects!
+ */
 public class MinimalServer {
 	
 	//private static Logger logger = Logger.getLogger(MinimalServer.class.getName());

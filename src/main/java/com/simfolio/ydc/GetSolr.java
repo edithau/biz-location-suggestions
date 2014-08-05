@@ -12,6 +12,9 @@ import javax.servlet.ServletException;
 import org.apache.log4j.Logger;
 
 
+/*
+ * a proxy to Solr server
+ */
 public class GetSolr {
 
 	private static Logger logger = Logger.getLogger(GetSolr.class.getName());
@@ -22,11 +25,13 @@ public class GetSolr {
 
 
 	private String myQ;
+	private String fq;
 	private String rows;
 	
 	public GetSolr(Map<String, String[]> params) throws ServletException { 
 		try {
 			myQ = params.get("myQ")[0];
+			fq = (params.get("fq") != null) ? params.get("fq")[0] : null;
 			try {
 				rows = params.get("rows")[0];
 				if (Integer.parseInt(rows) > MAX_SOLR_RESULTS) {
@@ -54,13 +59,17 @@ public class GetSolr {
 	    		urlStr += "&rows=" + rows;
 	    	}
 	    	
+	    	if (fq != null) {
+	    		urlStr += "&fq=" + fq;
+	    	}
+	    	
 	        URL solrUrl = new URL(urlStr);
 	        URLConnection uconn = solrUrl.openConnection();
 	        br = new BufferedReader(new InputStreamReader(uconn.getInputStream()));
 	        String inputLine;
 	
 	        while ((inputLine = br.readLine()) != null) { 
-	            retVal += inputLine;
+	            retVal += inputLine + '\n';
 	        }
 	        br.close();		
 	    } catch (Exception e ) { 

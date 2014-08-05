@@ -163,7 +163,6 @@ public class YelpBizDatasetParser {
 		} else {
 			noOpHoursCount++;
 			// if there is no op hours present
-			// XXX default is 24 x 7 for now
 			opHrsCodedString = BusinessOpHrs.getDefaultOpHrsCodedString();
 		}
 		

@@ -17,7 +17,9 @@ public class GetSolrServlet extends HttpServlet {
 			throws ServletException, IOException {
 		Map<String, String[]> params = request.getParameterMap();
 		
+		
 		String results = (new com.simfolio.ydc.GetSolr(params)).get();
+		response.setContentType("text/plain; charset=utf-8");
 		response.getWriter().println("{\"results\":" + results + "}");
 	}
 
