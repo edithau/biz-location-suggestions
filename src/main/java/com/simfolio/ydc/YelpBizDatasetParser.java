@@ -16,12 +16,16 @@ import com.eclipsesource.json.JsonObject;
 
 
 /*
- * Remove Json Objects from input with no zipcode or no business categories.  
+ * Remove Json Objects from input data with no zipcode or no business categories.  
  * convert lat/lon data into solr indexing format.
  * convert hours into solr indexing format
  * 
  * input: Yelp academic business data set in Json format
  * output: Json for solr indexing
+ * 
+ * 
+ * update ydc solr index with curl.  Make sure solr config allows update. 
+ * curl 'http://localhost:8983/solr/ydc/update/json?commit=true' --data-binary @solr_yelp_academic_dataset_business.json -H 'Content-type:application/json'
  */
 public class YelpBizDatasetParser {
 	private File outputDir;

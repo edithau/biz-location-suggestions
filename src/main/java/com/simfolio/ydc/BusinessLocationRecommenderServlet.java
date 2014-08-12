@@ -9,14 +9,14 @@ import javax.servlet.http.*;
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
 
-// Extend HttpServlet class
+
 @SuppressWarnings("serial")
 public class BusinessLocationRecommenderServlet extends HttpServlet {
 	private static Logger logger = Logger.getLogger(BusinessLocationRecommenderServlet.class.getName());
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		String businessId = request.getParameter("id");
+		String businessId = "\"" + request.getParameter("id") + "\"";
 		String dist = request.getParameter("dist");
 		String hasLinks = request.getParameter("hasLinks");
 		boolean shouldAddLinks = (hasLinks == null) ? false : request.getParameter("hasLinks").equalsIgnoreCase("true");

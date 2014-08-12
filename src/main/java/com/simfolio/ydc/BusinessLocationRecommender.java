@@ -29,10 +29,11 @@ import org.apache.solr.common.SolrDocumentList;
 
 
 /**
- * This is the business location recommendation engine.  It trains mahout data in memory and provide suggestions
+ * This is the business location recommendation engine.  It trains mahout data in memory and provide suggestions.
+ * For application details, visit http://simfol.io/ydc
  * 
  * Steps: 
- * 1. within  given distance, search for businesses with at least one common cat with the target
+ * 1. search for businesses with at least one common cat with the target, within a specified distance (in km)
  * 2. group returned businesses by zip codes, aggregate the review counts 
  * 3. select zip codes with higher total review counts than target's zip code total review count
  * 
@@ -50,7 +51,6 @@ import org.apache.solr.common.SolrDocumentList;
  * The final results list the location(zip) with businesses similar to target and with "foot traffic" higher than target's.
  * 
  * 
- * @author edith
  *
  */
 public class BusinessLocationRecommender {
@@ -58,7 +58,7 @@ public class BusinessLocationRecommender {
 
 	
 	private static String SOLR_FACADE_PATH = "/getSolr?myQ=";
-	private static HttpSolrServer SOLR = new HttpSolrServer("http://localhost:8983/solr/ydc");
+	private static HttpSolrServer SOLR = Util.getSolrServer(); 
 	private static int OPERATING_PERIODS = 21;
 	
 	//max number of zip codes (to process) with total review count higher than tgtBiz's zip code total review count

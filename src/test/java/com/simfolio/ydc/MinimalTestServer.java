@@ -51,7 +51,7 @@ public class MinimalTestServer {
 	private static Logger logger = Logger.getLogger(MinimalTestServer.class.getName());
 
     public static void main(String[] args) throws Exception {
-        Server server = new Server(8080);
+        Server server = new Server(Util.getServletPort());
         ServletHandler handler = new ServletHandler();
         handler.addServletWithMapping(SolrQueryServlet.class, "/hello");
         server.setHandler(handler);    
@@ -61,7 +61,7 @@ public class MinimalTestServer {
 
     @SuppressWarnings("serial")
     public static class SolrQueryServlet extends HttpServlet {
-    	static HttpSolrServer SOLR = new HttpSolrServer("http://localhost:8983/solr/ydc");
+    	static HttpSolrServer SOLR = Util.getSolrServer();
     	static int OPERATING_PERIODS = 21;
 		
 

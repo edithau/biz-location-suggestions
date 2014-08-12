@@ -30,7 +30,8 @@ public class GetSolr {
 	
 	public GetSolr(Map<String, String[]> params) throws ServletException { 
 		try {
-			myQ = params.get("myQ")[0];
+			myQ =  params.get("myQ")[0];
+			myQ = myQ.replace("\\",  "");  // trim off extra slash from string escape
 			fq = (params.get("fq") != null) ? params.get("fq")[0] : null;
 			try {
 				rows = params.get("rows")[0];

@@ -1,12 +1,10 @@
 package com.simfolio.ydc;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.eval.IRStatistics;
@@ -41,12 +39,12 @@ import org.apache.solr.common.SolrDocumentList;
  * 83% of the top 10 recommendations are good;
  * 83% of all good recommendations are among those recommended.
  * 
- * This program takes about 6 mins to complete.
+ * This program takes about 6 mins to complete.  To run within an exe jar:
+ * java -Dlog4j.configuration=resources/log4j.properties -cp biz2.jar com.simfolio.ydc.EvaluateRecommender 
  * 
  */
 public class EvaluateRecommender {
 	private static HttpSolrServer solr;
-	private static String CONF_FILE = "config.properties";
 	
 	// max num of record to retrieve from solr for an evaluation
 	private static int MAX_ROWS = 30000;
@@ -64,8 +62,7 @@ public class EvaluateRecommender {
 		//RandomUtils.useTestSeed();
 		
 		printTimeStamp();
-		Properties props = getProperties();
-		solr = new HttpSolrServer(props.getProperty("SOLR"));
+		solr = Util.getSolrServer(); 
 		
 		// return the categories and operating schedule of all businesses in the dataset
 		SolrDocumentList businesses = getBusinesses();
@@ -83,13 +80,6 @@ public class EvaluateRecommender {
 		printTimeStamp();
 	}
 	
-	private static Properties getProperties() throws IOException {
-        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(CONF_FILE);
-		Properties props = new Properties();
-        props.load(inputStream);
-		
-		return props;
-	}
 	
 	private static SolrDocumentList getBusinesses() throws SolrServerException {
 		SolrQuery query = new SolrQuery("*:*");
