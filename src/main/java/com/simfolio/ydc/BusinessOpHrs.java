@@ -8,7 +8,7 @@ import com.eclipsesource.json.JsonObject.Member;
 
 
 /*
- * data structure represent a business operating time segments.
+ * data structure represents a business operating time segments.
  */
 public class BusinessOpHrs {
 	static String MORNING_OPEN_BEFORE = "10:01";
@@ -18,6 +18,8 @@ public class BusinessOpHrs {
 	static String EVENING_OPEN_BEFORE = "21:01";
 	static String EVENING_CLOSE_AFTER = "21:59";
 	
+	
+	// there are 21 time segments: 7 days x 3 (morning, afternoon, evening)
 	static char[] INIT_CODED_CHARS = new char[21];
 
 

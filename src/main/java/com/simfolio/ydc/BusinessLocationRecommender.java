@@ -72,15 +72,19 @@ public class BusinessLocationRecommender {
 	private MemoryIDMigrator idToThing = new MemoryIDMigrator();
 
 	private DataModel model;
+	
+	protected BusinessLocationRecommender() {
+		// empty constructor for testing only	
+	}
 
 	public BusinessLocationRecommender(String businessId, String dist) throws SolrServerException {
-		// get info about the target business from Solr
+		// get info (ie. zip, latitude/longitude)  about the target business from Solr
 		tgtBiz = getTargetBusiness(businessId);       
 		
-		// Step 2 
+		// Step 2: group businesses by zip codes, aggregate the review counts 
 		String[] topZips = getHigherReviewCountZipWithinDistance(dist, MAX_TOP_ZIPS);
 		
-		// Step 3
+		// Step 3: select zip codes with higher total review counts than target's 
 		SolrDocumentList businessesInTopZips = getBusinessesWithCatsInZip(topZips);
 		
 		// generate an in memory mahout data model for similarity calculation
@@ -88,7 +92,10 @@ public class BusinessLocationRecommender {
 	}
 	
 
-	// Step 4 -6 
+	/*
+	 *  Step 4 -6: calculate Similarity scores between target and the selected businesses.  
+	 * 				Group scores by zip codes and recommend the zip codes with high scores.
+	 */
     public String recommend(boolean shouldAddLinks)  {
     	String retVal = "";
     	
@@ -135,6 +142,7 @@ public class BusinessLocationRecommender {
     }
 	
     
+    // XXX should consolidate sorting methods
     private List<Map.Entry<String, Double[]>> sortByScore(HashMap<String, Double[]> sortingMap) {        
     	List<Map.Entry<String, Double[]>> sortedList = new ArrayList<Map.Entry<String, Double[]>>();
     	sortedList.addAll(sortingMap.entrySet());
@@ -149,8 +157,9 @@ public class BusinessLocationRecommender {
     	return sortedList;
     }
     
-    
-    // XXX only return the top 20 zips  refactor
+    /*
+     * return a sorted list of zips with the highest mahout scores (in desc order).  The sorted list is in the JsonArray format
+     */
     private String convertSortedListToJsonArray(List<Map.Entry<String, Double[]>>list, boolean shouldAddLinks) {
     	String jsonArray = "[";
     	String key, lineSep;
@@ -175,8 +184,11 @@ public class BusinessLocationRecommender {
     	
     	return jsonArray;
     }
-	
+    
 
+    /* an option to include Solr urls to access the selected businesses in a particular zip 
+     * 
+     */
 	private String addLinkToZip(String zip) {
 		String retVal = "";
 		try {
@@ -190,106 +202,22 @@ public class BusinessLocationRecommender {
 	}
 	
 	
-	SolrDocument getTargetBusiness(String id) throws SolrServerException {
-		SolrQuery query = new SolrQuery("*:*");
-		query.addFilterQuery("business_id:" + id);
-		query.setFields("zip","business_id", "categories","lat_lon","op_schedule");
-
-		QueryResponse response = SOLR.query(query);
-		return response.getResults().get(0);
-	}
-
-	
-	String[] getHigherReviewCountZipWithinDistance(String dist, int returnZipCount) throws SolrServerException {
-		String catQStr = getCatQueryStr(tgtBiz);
-		SolrQuery query = new SolrQuery(catQStr);       
-		query.addFilterQuery("{!bbox sfield=lat_lon}");
-		query.add("pt",tgtBiz.get("lat_lon").toString() );
-		query.add("d", dist);
-		query.add("fl", "zip review_count");
-		query.setRows(6000);
-		
-		QueryResponse response = SOLR.query(query);  
-		return parseReviewCountInZipResponse(response.getResults(), returnZipCount);
-	}
-	
-	
-	// each result is [zip, review_count] for one business
-	String[] parseReviewCountInZipResponse(SolrDocumentList results, int maxZipNum) {
-		HashMap<Integer, Integer>zipReviewCountMap = new HashMap<Integer, Integer>();
-		
-		// aggregate total review count per zip
-		for (SolrDocument result : results) {
-			Integer reviewCount = (Integer)result.get("review_count");
-			Integer zip = (Integer)result.get("zip");
-
-			if (zipReviewCountMap.get("zip") == null) {
-				zipReviewCountMap.put(zip, reviewCount);
-			} else {
-				int totCount = zipReviewCountMap.get(zip);
-				zipReviewCountMap.put(zip, totCount+reviewCount);
-			}
-		}
-	
-		return getHigherReviewCount(sortByReviewCount(zipReviewCountMap), maxZipNum);
-	}
-	
-	
-	private String[] getHigherReviewCount(List<Map.Entry<Integer, Integer>> sortedZipReviewList, int maxZipNum) {
-		int sortedListSize = (maxZipNum < sortedZipReviewList.size()) ? maxZipNum : sortedZipReviewList.size();
-		String[] sortedList = new String[sortedListSize];
-
-		int i;
-		for (i=0; i < sortedListSize; i++) {
-			sortedList[i] = sortedZipReviewList.get(i).getKey() + "";
-		}	
-		return sortedList;
-	}
-
-	// XXX refactor
-    private List<Map.Entry<Integer, Integer>> sortByReviewCount(HashMap<Integer, Integer> sortingMap) {        
-    	List<Map.Entry<Integer, Integer>> sortedList = new ArrayList<Map.Entry<Integer, Integer>>();
-    	sortedList.addAll(sortingMap.entrySet());
-    	
-        Comparator<Map.Entry<Integer, Integer>> byMapValues = new Comparator<Map.Entry<Integer, Integer>>() {
-            public int compare(Map.Entry<Integer, Integer> left, Map.Entry<Integer, Integer> right) {
-                return right.getValue().compareTo(left.getValue());
-            }
-        };
-        
-    	Collections.sort(sortedList, byMapValues); 
-    	return sortedList;
-    }
-
-	SolrDocumentList getBusinessesWithCatsInZip(String[] zips) throws SolrServerException {
-		String catQstr = getCatQueryStr(tgtBiz);
-		String zipQstr = "";
-		boolean foundTgt = false;
-		for (String zip : zips) {
-			zipQstr += "zip:" + zip + " ";
-			if (!foundTgt && zip == tgtBiz.get("zip")) {
-				foundTgt = true;
-			}
-		}
-		
-		// need to make sure tgtBiz's zip is in the DRM
-		if (!foundTgt) {
-			zipQstr += "zip:" + tgtBiz.get("zip") + " ";
-		}
-		
-		String q = "(" + zipQstr + ") AND (" + catQstr + ")";
-		SolrQuery query = new SolrQuery(q);   
-		query.add("fl", "business_id zip categories op_schedule");
-		query.setRows(2000);
-
-		QueryResponse response = SOLR.query(query); 
-
-		return response.getResults();
-	}
-
-
+	/*
+	 * A DataModel is a matrix Mahout uses to calculate Similarity.  
+	 * The columns of this matrix consist of the following.  Each column is represented by a mahout id 
+	 * 		1. the unique categories input businesses belong to; 
+	 * 		2. the operating time segments; there are 21 operating time segments (ie. Tues evening, Wed morning)
+	 * 
+	 * The rows of this matrix consist of businesses.  Each row is represented by a mahout id, which is mapped to 
+	 * a combo business|zip id 
+	 * 
+	 * This DataModel is a boolean matrix.  "1" represents a business belong to this category or open during this time segment. 
+	 * 
+	 * Using this DataModel and a similarity algorithm, mahout calculates how similar two businesses are by providing a score.
+	 * Thus, when comparing one business against others, a vector of similarity scores is needed.
+	 */
 	DataModel generateDataModel(SolrDocumentList businesses) {	
-		// create ids for static operating schedule name.  schedule0 .. 21 represent 21 operating periods (ie. Tues evening, Wed morning)
+		
 		for (int i=0; i < OPERATING_PERIODS; i++) {
 			idToThing.storeMapping(idToThing.toLongID("schedule"+i), "schedule"+i);
 		}
@@ -328,11 +256,127 @@ public class BusinessLocationRecommender {
 		//return new GenericDataModel(featureMap);
 		return new GenericBooleanPrefDataModel(GenericBooleanPrefDataModel.toDataMap(featureMap));
 	}
+	
+	
+	/*
+	 * input: yelp business id
+	 * output: a SolrDocument with fields -- zip, categories, latitude/longitude, and operating schedule  
+	 */
+	SolrDocument getTargetBusiness(String id) throws SolrServerException {
+		SolrQuery query = new SolrQuery("*:*");
+		query.addFilterQuery("business_id:" + id);
+		query.setFields("zip","business_id", "categories","lat_lon","op_schedule");
+
+		QueryResponse response = SOLR.query(query);
+		return response.getResults().get(0);
+	}
+
+	
+	/*
+	 * get X zip codes within distance (Km) dist which have higher total review counts in business categories tgtBiz belongs to.
+	 * X is returnZipCount
+	 * 
+	 */
+	String[] getHigherReviewCountZipWithinDistance(String dist, int returnZipCount) throws SolrServerException {
+		String catQStr = getCatQueryStr(tgtBiz);
+		SolrQuery query = new SolrQuery(catQStr);       
+		query.addFilterQuery("{!bbox sfield=lat_lon}");
+		query.add("pt",tgtBiz.get("lat_lon").toString() );
+		query.add("d", dist);
+		query.add("fl", "zip review_count");
+		query.setRows(6000);
+		
+		QueryResponse response = SOLR.query(query);  
+		return parseReviewCountInZipResponse(response.getResults(), returnZipCount);
+	}
+	
+	
+	/*
+	 *  return a sorted (desc) array of zip codes which have the highest total review counts.
+	 *  The max sorted list size is maxZipNum
+	 */
+	String[] parseReviewCountInZipResponse(SolrDocumentList results, int maxZipNum) {
+		HashMap<Integer, Integer>zipReviewCountMap = new HashMap<Integer, Integer>();
+		
+		// aggregate total review count per zip
+		for (SolrDocument result : results) {
+			Integer reviewCount = (Integer)result.get("review_count");
+			Integer zip = (Integer)result.get("zip");
+
+			if (zipReviewCountMap.get("zip") == null) {
+				zipReviewCountMap.put(zip, reviewCount);
+			} else {
+				int totCount = zipReviewCountMap.get(zip);
+				zipReviewCountMap.put(zip, totCount+reviewCount);
+			}
+		}
+	
+		return getHigherReviewCountZips(sortByReviewCount(zipReviewCountMap), maxZipNum);
+	}
+	
+	
+	private String[] getHigherReviewCountZips(List<Map.Entry<Integer, Integer>> sortedZipReviewList, int maxZipNum) {
+		int sortedListSize = (maxZipNum < sortedZipReviewList.size()) ? maxZipNum : sortedZipReviewList.size();
+		String[] sortedList = new String[sortedListSize];
+
+		int i;
+		for (i=0; i < sortedListSize; i++) {
+			sortedList[i] = sortedZipReviewList.get(i).getKey() + "";
+		}	
+		return sortedList;
+	}
+
+	// XXX refactor
+    private List<Map.Entry<Integer, Integer>> sortByReviewCount(HashMap<Integer, Integer> sortingMap) {        
+    	List<Map.Entry<Integer, Integer>> sortedList = new ArrayList<Map.Entry<Integer, Integer>>();
+    	sortedList.addAll(sortingMap.entrySet());
+    	
+        Comparator<Map.Entry<Integer, Integer>> byMapValues = new Comparator<Map.Entry<Integer, Integer>>() {
+            public int compare(Map.Entry<Integer, Integer> left, Map.Entry<Integer, Integer> right) {
+                return right.getValue().compareTo(left.getValue());
+            }
+        };
+        
+    	Collections.sort(sortedList, byMapValues); 
+    	return sortedList;
+    }
+
+    
+    /*
+     * return a list of businesses reside in zips who share the same business categories as tgtBiz
+     */
+	SolrDocumentList getBusinessesWithCatsInZip(String[] zips) throws SolrServerException {
+		String catQstr = getCatQueryStr(tgtBiz);
+		String zipQstr = "";
+		boolean foundTgt = false;
+		for (String zip : zips) {
+			zipQstr += "zip:" + zip + " ";
+			if (!foundTgt && zip == tgtBiz.get("zip")) {
+				foundTgt = true;
+			}
+		}
+		
+		// need to make sure tgtBiz's zip is in the DRM
+		if (!foundTgt) {
+			zipQstr += "zip:" + tgtBiz.get("zip") + " ";
+		}
+		
+		String q = "(" + zipQstr + ") AND (" + catQstr + ")";
+		SolrQuery query = new SolrQuery(q);   
+		query.add("fl", "business_id zip categories op_schedule");
+		query.setRows(2000);
+
+		QueryResponse response = SOLR.query(query); 
+
+		return response.getResults();
+	}
 
 
-
-	String getCatQueryStr(SolrDocument tgtBiz) {
-		ArrayList<String> cats = (ArrayList<String>)tgtBiz.get("categories");
+	/*
+	 * return a solr query string of categories the input biz belongs to
+	 */
+	String getCatQueryStr(SolrDocument biz) {
+		ArrayList<String> cats = (ArrayList<String>)biz.get("categories");
 		String q = "";
 		for (String cat : cats) {
 			q += "categories:\"" + cat + "\" ";
@@ -340,6 +384,10 @@ public class BusinessLocationRecommender {
 		return q.trim();
 	}
 	
+	
+	/*
+	 * return an Id in the format of "businessId|zip"
+	 */
     String getComboBusinessId(SolrDocument business) {
 		String businessId = business.get("business_id").toString();
 		String zip = business.get("zip").toString();

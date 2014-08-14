@@ -34,7 +34,7 @@ import org.apache.solr.common.SolrDocumentList;
 
 
 /* 
- * This program evaluate the quality of the recommendation using precision and recall.
+ * This program evaluates the quality of the recommendation using precision and recall.
  * With the Yelp academic business dataset, on average, 
  * 83% of the top 10 recommendations are good;
  * 83% of all good recommendations are among those recommended.

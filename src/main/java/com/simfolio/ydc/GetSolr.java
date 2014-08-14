@@ -13,14 +13,13 @@ import org.apache.log4j.Logger;
 
 
 /*
- * a proxy to Solr server
+ * a proxy to query Solr server via http
  */
 public class GetSolr {
 
 	private static Logger logger = Logger.getLogger(GetSolr.class.getName());
-	private static String SOLR_PORT = "8983";
 	private static int MAX_SOLR_RESULTS = 100;
-	private static String urlTemplate = "http://localhost:" + SOLR_PORT + "/solr/ydc/query?q=_MYQ_&wt=json&indent=true"; // + MAX_SOLR_RESULTS;
+	private static String urlTemplate = Util.getSolrServerString() + "/query?q=_MYQ_&wt=json&indent=true"; 
 	
 
 
@@ -53,7 +52,6 @@ public class GetSolr {
 		String urlStr = "";
 		
 	    try {
-	    	//myQ  = myQ + "&rows=" + rows;
 	    	String encodedQ = URLEncoder.encode(myQ, "UTF-8");
 	    	urlStr = urlTemplate.replaceAll("_MYQ_", encodedQ);
 	    	if (rows != null) {

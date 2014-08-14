@@ -8,7 +8,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 
 /*
  * This is the main executable of the project runnable jar.  
- * java -jar -Dlog4j.configuration=resources/log4j.properties biz2.jar > biz2.log
+ * java -jar -Dlog4j.configuration=resources/log4j.properties biz2.jar > biz2.log &
  * 
  * 
  * getSolr: solr server proxy.  solr port can only be accessed locally.

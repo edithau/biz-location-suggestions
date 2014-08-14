@@ -28,11 +28,15 @@ import com.eclipsesource.json.JsonObject;
  * curl 'http://localhost:8983/solr/ydc/update/json?commit=true' --data-binary @solr_yelp_academic_dataset_business.json -H 'Content-type:application/json'
  */
 public class YelpBizDatasetParser {
+	// where output Json file goes
 	private File outputDir;
+	
+	// input json file 
 	private File yelpBizDataFile;
 	
 	private static Logger logger = Logger.getRootLogger();
 	
+	// prefix of the output json file name
 	private static String SOLR_JSON_PREFIX = "solr_";
 	
 	// track num of invalid businesss address in the input json file
@@ -56,7 +60,9 @@ public class YelpBizDatasetParser {
 	}
 	
 	
-	
+	/*
+	 * open input file and clean up output directory before parsing
+	 */
 	public YelpBizDatasetParser(String yelpBizJsonFilename, String oDir) throws IOException, URISyntaxException {
 		// input files
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -78,7 +84,9 @@ public class YelpBizDatasetParser {
 	
 	
 	
-	/* parse the original yelp business json file.  clean up invalid data and select fields that are needed for solr indexing */
+	/* 
+	 * parse the original yelp business json file.  clean up invalid data and select fields that are needed for solr indexing 
+	 */
 	public void parseYelpBizDataset() throws IOException {	
 		BufferedReader br = null;
 		PrintWriter pw = null;
@@ -106,6 +114,13 @@ public class YelpBizDatasetParser {
 		}
 	}
 	
+	
+	/*
+	 * write a Json object  to the PrintWriter.  
+	 * line: Json object in a String format
+	 * 
+	 * return true if the JsonObject String is a valid business data record for processing
+	 */
 	private boolean writeJsonObject(PrintWriter pw, String line) throws IOException {
 		boolean retVal;
 		
@@ -122,7 +137,15 @@ public class YelpBizDatasetParser {
 	}
 	
 	
-	// remove business with no zipcode in its address or no category in categories
+	/*
+	 * create a new JsonObject with information from input bizInfo.  The output JsonObject will 
+	 * be a business record to the output file.
+	 * 
+	 * Businesses with no zip code  or category  will not be included in the output file.  
+	 * 
+	 * Returns a business JsonObject for the output file.  If the input JsonObject is rejected, returns null.
+	 *
+	 */
 	private JsonObject parseOneRecord(JsonObject bizInfo) {
 		JsonObject retVal = null;
 		String addr = bizInfo.get("full_address").toString();
@@ -161,8 +184,6 @@ public class YelpBizDatasetParser {
 		
 		if (jHrs != null && jHrs.size() > 0) {
 			opHrsCodedString = BusinessOpHrs.getCodedString(jHrs);
-			
-
 
 		} else {
 			noOpHoursCount++;
